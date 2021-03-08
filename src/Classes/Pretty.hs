@@ -39,7 +39,8 @@ instance Pretty CExpr where
   pretty CExprCall   { _cd = CDef { _nm = "ltb" }, _cparams = [a, b] } = pretty a <+> "<"  <+> pretty b
   pretty CExprCall   { _cd = CDef { _nm = "leb" }, _cparams = [a, b] } = pretty a <+> "<=" <+> pretty b
   pretty CExprCall   { _cd = CDef { _nm = "match" }, .. } = "match" <> (parens . breakcommatize $ _cparams)
-  pretty CExprCall   { _cd = CDef { _ty = CTAuto, .. }, .. } = pretty _nm <> (parens . commatize $ map pretty _cparams)
+  pretty CExprCall   { _cd = CDef { _ty = CTAuto, .. }, .. } =
+    pretty _nm <>                             (parens . commatize $ map pretty _cparams)
   pretty CExprCall   { _cd = CDef { .. }, .. } =
     pretty _nm <> "<" <> pretty _ty <> ">" <> (parens . commatize $ map pretty _cparams)
   pretty CExprVar    { .. } = pretty _var

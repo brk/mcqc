@@ -83,6 +83,27 @@ mkMatch CDef { .. } ctors =
           fdefs = givenm 'f' [CTFree (i + freedom) | i <- [1..length ctors]]
           fnames = map getname fdefs
 
+isCoqGeneratedName :: String -> Bool
+isCoqGeneratedName ('c':'o':'q':'_':_) = True
+isCoqGeneratedName _ = False
+
+isPODGeneratedName :: String -> Bool
+isPODGeneratedName "coq_Permission" = True
+isPODGeneratedName "coq_Action" = True
+isPODGeneratedName "coq_Category" = True
+isPODGeneratedName _ = False
+
+reprTy :: CType -> CType
+reprTy t = t
+{-
+  case t of
+    CTBase nm | isPODGeneratedName (T.unpack nm) -> t
+    CTBase nm | isCoqGeneratedName (T.unpack nm) -> CTPtr t
+    CTBase _ -> t
+    CTPtr  _ -> t
+    _        -> CTPtr t
+-}
+
 -- Make a struct for each Coq inductive constructor with that name
 mkCtorStruct :: CType -> CDef -> CDecl
 mkCtorStruct unaliasT CDef { _nm = name, _ty = CTFunc { .. } } =
@@ -90,7 +111,7 @@ mkCtorStruct unaliasT CDef { _nm = name, _ty = CTFunc { .. } } =
     where freedom = getMaxVaridx unaliasT
           mkRecTypes rec
             | CTPtr _fret == rec = CTPtr unaliasT
-            | otherwise = rec
+            | otherwise = reprTy rec
 mkCtorStruct _ CDef { .. } = error $ "Cannot export constructor " ++ show (_nm)
 
 -- Make C++ variant an alias for Coq inductive type
@@ -103,10 +124,10 @@ mkCtorFunc :: CDef -> CDef -> CDecl
 mkCtorFunc CDef { .. } CDef { _nm = ctornm, _ty = CTFunc { .. } } =
     CDFunc fdptr defs $
       CExprCall (CDef "return" (CTPtr _ty)) [    -- return inside the ctor body
-        CExprCall (CDef "std::make_shared" _ty) [ -- wrap in a shared pointer
+        CExprCall (CDef "std::make_shared" (CTPtr _ty)) [ -- wrap in a shared pointer
           CExprCall fd . map (CExprVar . getname) $ defs -- Call struct constructor in mkCDStruct
         ]
       ]
     where fdptr = CDef (T.toLower ctornm) (CTPtr _ty)
           fd = CDef ctornm _ty
-          defs  = givenm 'a' _fins
+          defs  = givenm 'a' $ map reprTy _fins

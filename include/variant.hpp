@@ -14,5 +14,11 @@ namespace Variant {
     inline auto gmatch(std::shared_ptr<T> m, Args... args) {
         return std::visit(overloaded { args... }, *m);
     }
+
+    // Match boilerplate
+    template<typename T, typename ...Args>
+    inline auto gmatchr(T& m, Args... args) {
+        return std::visit(overloaded { args... }, m);
+    }
 }
 #endif
