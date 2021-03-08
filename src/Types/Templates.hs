@@ -11,6 +11,16 @@ class Template a where
     templatify :: Context CType -> a -> a
     plug :: Int -> a -> a
 
+{- Example: map gets decl   <template<T,V,U=invoke<V,T>> ptr<list<U>> map(V f, list<T>)
+ -              :: ((T -> U) , list T) -> list U
+ - For a call of map(F, L) where L :: list<Z> and F :: Z -> bool,
+ - templatify gets called with _ty = list<bool>
+ -                         and t   = ((_ -> _) , list<_>) -> list<_>
+ -                                                    ^1          ^2
+ - Note it is wrong to match the retty of t with _ty to get bool (for ^2),
+ - because the parameter T in the template corresponds to ^1 not ^2,
+ - so it ought to be Z instead.
+ -}
 instance Template CDef where
     templatify ctx CDef { .. } = case ctx !? _nm of
         (Nothing) -> CDef _nm _ty
